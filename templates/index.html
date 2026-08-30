@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nova | DecodeLabs Project 1</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <main class="app">
+        <header class="header">
+            <div class="brand">
+                <div class="logo">N</div>
+                <div>
+                    <h1>Nova</h1>
+                    <p>DecodeLabs · Rule-Based AI Chatbot</p>
+                </div>
+            </div>
+            <span class="status"><i></i> Online</span>
+        </header>
+
+        <section id="chat" class="chat">
+            <div class="message bot">
+                <div class="avatar">N</div>
+                <div class="bubble">
+                    Hello! I'm Nova. Ask me about DecodeLabs or Project 1.
+                    <div class="time">Now</div>
+                </div>
+            </div>
+        </section>
+
+        <div class="suggestions">
+            <button data-message="What is DecodeLabs?">What is DecodeLabs?</button>
+            <button data-message="What is Project 1?">What is Project 1?</button>
+            <button data-message="Does this project need a dataset?">Need a dataset?</button>
+        </div>
+
+        <form id="chat-form" class="input-area">
+            <input id="message" type="text" placeholder="Type your message..." autocomplete="off">
+            <button type="submit">Send</button>
+        </form>
+    </main>
+
+    <script>
+        const chat = document.getElementById("chat");
+        const form = document.getElementById("chat-form");
+        const input = document.getElementById("message");
+
+        function addMessage(text, sender) {
+            const wrapper = document.createElement("div");
+            wrapper.className = `message ${sender}`;
+
+            const avatar = document.createElement("div");
+            avatar.className = "avatar";
+            avatar.textContent = sender === "bot" ? "N" : "You";
+
+            const bubble = document.createElement("div");
+            bubble.className = "bubble";
+            bubble.textContent = text;
+
+            const time = document.createElement("div");
+            time.className = "time";
+            time.textContent = new Date().toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"});
+            bubble.appendChild(time);
+
+            wrapper.appendChild(avatar);
+            wrapper.appendChild(bubble);
+            chat.appendChild(wrapper);
+            chat.scrollTop = chat.scrollHeight;
+        }
+
+        async function sendMessage(text) {
+            if (!text.trim()) return;
+
+            addMessage(text, "user");
+            input.value = "";
+            input.disabled = true;
+
+            try {
+                const response = await fetch("/chat", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({message: text})
+                });
+
+                const data = await response.json();
+                setTimeout(() => addMessage(data.response, "bot"), 250);
+            } catch (error) {
+                addMessage("Something went wrong while connecting to the chatbot.", "bot");
+            } finally {
+                input.disabled = false;
+                input.focus();
+            }
+        }
+
+        form.addEventListener("submit", (event) => {
+            event.preventDefault();
+            sendMessage(input.value);
+        });
+
+        document.querySelectorAll(".suggestions button").forEach(button => {
+            button.addEventListener("click", () => sendMessage(button.dataset.message));
+        });
+    </script>
+</body>
+</html>
